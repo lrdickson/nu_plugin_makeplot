@@ -57,13 +57,45 @@ impl Plot {
         };
         let values = values?;
 
+        // Find the min and max values
+        let mut min_x = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut min_y = f32::MAX;
+        let mut max_y = f32::MIN;
+        for (x, y) in values.iter() {
+            if *x < min_x {
+                min_x = *x;
+            }
+            if *x > max_x {
+                max_x = *x;
+            }
+            if *y < min_y {
+                min_y = *y;
+            }
+            if *y > max_y {
+                max_y = *y;
+            }
+        }
+
+        let domain = max_x - min_x;
+        let domain_buffer = domain / 10.;
+        let range = max_y - min_y;
+        let range_buffer = range / 10.;
+
+        let plot_min_x = min_x - domain_buffer;
+        let plot_max_x = max_x + domain_buffer;
+        let plot_min_y = min_y - range_buffer;
+        let plot_max_y = max_y + range_buffer;
+
         let root = BitMapBackend::new("test.png", (640, 480)).into_drawing_area();
         root.fill(&WHITE).to_labeled_err(call)?;
         let mut chart = ChartBuilder::on(&root)
             .margin(5)
             .x_label_area_size(30)
             .y_label_area_size(30)
-            .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
+            // .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
+            .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
+            // .build_cartesian_2d(min_x..max_x, min_y..max_y)
             .to_labeled_err(call)?;
 
         chart.configure_mesh().draw().to_labeled_err(call)?;
@@ -81,8 +113,8 @@ impl Plot {
 impl Plugin for Plot {
     fn signature(&self) -> Vec<PluginSignature> {
         vec![
-            PluginSignature::build("plotgen").usage("creates a plot"), // .input_output_type(Type::List(Type::Int), Type::Nothing)
-                                                                       // .input_output_type(Type::Table(), Type::Nothing)
+            PluginSignature::build("makeplot").usage("creates a plot"), // .input_output_type(Type::List(Type::Int), Type::Nothing)
+                                                                        // .input_output_type(Type::Table(), Type::Nothing)
         ]
     }
 
@@ -92,7 +124,7 @@ impl Plugin for Plot {
         call: &EvaluatedCall,
         input: &Value,
     ) -> Result<Value, LabeledError> {
-        assert_eq!(name, "plotgen");
+        assert_eq!(name, "makeplot");
         self.make_plot(call, input)?;
         Ok(Value::nothing(call.head))
     }
