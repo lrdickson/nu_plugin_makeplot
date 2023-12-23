@@ -886,15 +886,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nu-plotters"
-version = "0.1.0"
-dependencies = [
- "nu-plugin",
- "nu-protocol",
- "plotters",
-]
-
-[[package]]
 name = "nu-plugin"
 version = "0.87.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -963,6 +954,15 @@ dependencies = [
  "strip-ansi-escapes",
  "sys-locale",
  "unicase",
+]
+
+[[package]]
+name = "nu_plugin_makeplot"
+version = "0.1.0"
+dependencies = [
+ "nu-plugin",
+ "nu-protocol",
+ "plotters",
 ]
 
 [[package]]
