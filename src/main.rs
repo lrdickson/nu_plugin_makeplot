@@ -55,16 +55,13 @@ impl Plugin for Plot {
         let values = values?;
 
         match make_plot(values) {
-            Ok(()) => {}
-            Err(e) => {
-                return Err(LabeledError {
-                    msg: format!("{}", e),
-                    label: e.label,
-                    span: Some(call.head),
-                })
-            }
+            Ok(val) => Ok(Value::binary(val, call.head)),
+            Err(e) => Err(LabeledError {
+                msg: format!("{}", e),
+                label: e.label,
+                span: Some(call.head),
+            }),
         }
-        Ok(Value::nothing(call.head))
     }
 }
 

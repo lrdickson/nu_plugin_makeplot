@@ -41,7 +41,7 @@ where
     }
 }
 
-pub fn make_plot(values: Vec<(f32, f32)>) -> Result<(), MakePlotError> {
+pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
     // Find the min and max values
     let mut min_x = f32::MAX;
     let mut max_x = f32::MIN;
@@ -72,24 +72,27 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<(), MakePlotError> {
     let plot_min_y = min_y - range_buffer;
     let plot_max_y = max_y + range_buffer;
 
-    let root = BitMapBackend::new("test.png", (640, 480)).into_drawing_area();
-    root.fill(&WHITE).to_makeplot_err("Error")?;
-    let mut chart = ChartBuilder::on(&root)
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        // .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
-        .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
-        // .build_cartesian_2d(min_x..max_x, min_y..max_y)
-        .to_makeplot_err("Error")?;
+    let mut buf = Vec::new();
+    {
+        let root = BitMapBackend::with_buffer(&mut buf, (640, 480)).into_drawing_area();
+        root.fill(&WHITE).to_makeplot_err("Error")?;
+        let mut chart = ChartBuilder::on(&root)
+            .margin(5)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            // .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
+            .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
+            // .build_cartesian_2d(min_x..max_x, min_y..max_y)
+            .to_makeplot_err("Error")?;
 
-    chart.configure_mesh().draw().to_makeplot_err("Error")?;
+        chart.configure_mesh().draw().to_makeplot_err("Error")?;
 
-    chart
-        .draw_series(LineSeries::new(values.into_iter(), &RED))
-        .to_makeplot_err("Error")?;
+        chart
+            .draw_series(LineSeries::new(values.into_iter(), &RED))
+            .to_makeplot_err("Error")?;
 
-    root.present().to_makeplot_err("Error")?;
+        root.present().to_makeplot_err("Error")?;
+    }
 
-    Ok(())
+    Ok(buf)
 }
