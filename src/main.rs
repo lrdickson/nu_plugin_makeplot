@@ -13,10 +13,10 @@ impl Plot {
 
 impl Plugin for Plot {
     fn signature(&self) -> Vec<PluginSignature> {
-        vec![
-            PluginSignature::build("makeplot").usage("creates a plot"), // .input_output_type(Type::List(Type::Int), Type::Nothing)
-                                                                        // .input_output_type(Type::Table(), Type::Nothing)
-        ]
+        vec![PluginSignature::build("makeplot")
+            .usage("Creates a plot")
+            .input_output_type(Type::List(Box::new(Type::Int)), Type::Binary)
+            .input_output_type(Type::List(Box::new(Type::Float)), Type::Binary)]
     }
 
     fn run(
@@ -55,7 +55,7 @@ impl Plugin for Plot {
         let values = values?;
 
         match make_plot(values) {
-            Ok(val) => Ok(Value::binary(val, call.head)),
+            Ok(out) => return Ok(Value::binary(out, call.head)),
             Err(e) => Err(LabeledError {
                 msg: format!("{}", e),
                 label: e.label,

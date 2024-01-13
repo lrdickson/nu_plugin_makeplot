@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.79"
+image = { version = "0.24.7", features = ["png"] }
 nu-plugin = "0.87.1"
 nu-protocol = "0.87.1"
 plotters = "0.3.3"

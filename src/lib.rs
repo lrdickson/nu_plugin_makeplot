@@ -41,6 +41,18 @@ where
     }
 }
 
+impl<T, S: Into<String>> ResultToMakePlotError<T, S> for Result<T, image::ImageError> {
+    fn to_makeplot_err(self, label: S) -> Result<T, MakePlotError> {
+        match self {
+            Ok(x) => Ok(x),
+            Err(e) => Err(MakePlotError {
+                label: label.into(),
+                source: e.into(),
+            }),
+        }
+    }
+}
+
 pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
     // Find the min and max values
     let mut min_x = f32::MAX;
@@ -72,9 +84,14 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
     let plot_min_y = min_y - range_buffer;
     let plot_max_y = max_y + range_buffer;
 
-    let mut buf = Vec::new();
+    // Create the plot
+    let width = 640;
+    let height = 480;
+    let mut buf = vec![0; width * height * 3];
+    let width = width as u32;
+    let height = height as u32;
     {
-        let root = BitMapBackend::with_buffer(&mut buf, (640, 480)).into_drawing_area();
+        let root = BitMapBackend::with_buffer(&mut buf, (width, height)).into_drawing_area();
         root.fill(&WHITE).to_makeplot_err("Error")?;
         let mut chart = ChartBuilder::on(&root)
             .margin(5)
@@ -94,5 +111,15 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
         root.present().to_makeplot_err("Error")?;
     }
 
-    Ok(buf)
+    // Get an image from the buffer
+    let image = image::RgbImage::from_raw(width, height, buf).unwrap();
+    let mut bytes: Vec<u8> = Vec::new();
+    image
+        .write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageOutputFormat::Png,
+        )
+        .to_makeplot_err("Failed to make image")?;
+
+    Ok(bytes)
 }
