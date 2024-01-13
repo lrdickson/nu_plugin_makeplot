@@ -13,4 +13,6 @@ register ./target/release/nu_plugin_makeplot
 
 ## Examples
 
+```
 seq 0 100 | math sin | makeplot | save sine.png
+```
