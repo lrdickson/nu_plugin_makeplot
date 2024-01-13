@@ -27,6 +27,7 @@ impl Plugin for Plot {
     ) -> Result<Value, LabeledError> {
         // assert_eq!(name, "makeplot");
 
+        // Collect the values from the input
         let values: Result<Vec<(f32, f32)>, LabeledError> = match input {
             Value::List {
                 vals,

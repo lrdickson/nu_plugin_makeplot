@@ -92,7 +92,7 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
     let height = height as u32;
     {
         let root = BitMapBackend::with_buffer(&mut buf, (width, height)).into_drawing_area();
-        root.fill(&WHITE).to_makeplot_err("Error")?;
+        root.fill(&WHITE).to_makeplot_err("Failed to make plot")?;
         let mut chart = ChartBuilder::on(&root)
             .margin(5)
             .x_label_area_size(30)
@@ -100,15 +100,18 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
             // .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
             .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
             // .build_cartesian_2d(min_x..max_x, min_y..max_y)
-            .to_makeplot_err("Error")?;
+            .to_makeplot_err("Failed to make plot")?;
 
-        chart.configure_mesh().draw().to_makeplot_err("Error")?;
+        chart
+            .configure_mesh()
+            .draw()
+            .to_makeplot_err("Failed to make plot")?;
 
         chart
             .draw_series(LineSeries::new(values.into_iter(), &RED))
             .to_makeplot_err("Error")?;
 
-        root.present().to_makeplot_err("Error")?;
+        root.present().to_makeplot_err("Failed to make plot")?;
     }
 
     // Get an image from the buffer
@@ -119,7 +122,7 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
             &mut std::io::Cursor::new(&mut bytes),
             image::ImageOutputFormat::Png,
         )
-        .to_makeplot_err("Failed to make image")?;
+        .to_makeplot_err("Failed to make plot into image")?;
 
     Ok(bytes)
 }
