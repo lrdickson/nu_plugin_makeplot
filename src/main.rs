@@ -1,5 +1,5 @@
 use nu_plugin::{serve_plugin, EvaluatedCall, JsonSerializer, LabeledError, Plugin};
-use nu_protocol::{PluginSignature, Span, Type, Value};
+use nu_protocol::{PluginExample, PluginSignature, Span, Type, Value};
 
 use nu_plugin_makeplot::make_plot;
 
@@ -22,8 +22,8 @@ fn get_number(v: &Value, span: Option<Span>) -> Result<f32, LabeledError> {
         Value::Int { .. } => Ok(v.as_int()? as f32),
         Value::Float { .. } => Ok(v.as_float()? as f32),
         _ => Err(LabeledError {
-            label: "Error".into(),
-            msg: "Error".into(),
+            label: "Incorrect type".into(),
+            msg: format!("{:?} is not the correct type", v).into(),
             span,
         }),
     }
@@ -32,9 +32,24 @@ fn get_number(v: &Value, span: Option<Span>) -> Result<f32, LabeledError> {
 impl Plugin for Plot {
     fn signature(&self) -> Vec<PluginSignature> {
         vec![PluginSignature::build("makeplot")
-            .usage("Creates a plot")
-            .input_output_type(Type::List(Box::new(Type::Int)), Type::Binary)
-            .input_output_type(Type::List(Box::new(Type::Float)), Type::Binary)]
+            .usage("Creates a plot in png format")
+            .input_output_types(vec![
+                (Type::List(Box::new(Type::Number)), Type::Binary),
+                // (Type::Table(vec![(String::from("x"), Type::Number), (String::from("y"), Type::Number)]), Type::Binary),
+                (Type::Table(vec![]), Type::Binary),
+            ])
+            .plugin_examples(vec![
+                PluginExample{
+                    example: "seq 0 0.1 6.4 | each {|x| {x: $x, y: ($x | math sin)}} | makeplot | save sine.png".into(),
+                    description: "Create a plot of a sine wave from a table of values".into(),
+                    result: None,
+                },
+                PluginExample{
+                    example: "seq 0 10 | math sqrt | makeplot | save sqrt.png".into(),
+                    description: "Create a plot of the square root of a from a list of values".into(),
+                    result: None,
+                },
+            ])]
     }
 
     fn run(
@@ -55,7 +70,7 @@ impl Plugin for Plot {
             } => vals
                 .iter()
                 .enumerate()
-                .map(|(i, v)| match v {
+                .map(|(i, value)| match value {
                     Value::Int { .. } | Value::Float { .. } => {
                         match input_parse {
                             InputParse::Start => input_parse = InputParse::List,
@@ -68,7 +83,7 @@ impl Plugin for Plot {
                             }
                             _ => (),
                         }
-                        let y = get_number(v, Some(call.head))?;
+                        let y = get_number(value, Some(call.head))?;
                         Ok((i as f32, y))
                     }
                     Value::Record { .. } => {
@@ -84,11 +99,31 @@ impl Plugin for Plot {
                             _ => (),
                         }
 
-                        // TODO: take column headers other than x and y
-                        let record = v.as_record()?;
-                        let x = record.get("x").unwrap();
+                        // Get the x value
+                        let record = value.as_record()?;
+                        let x = match record.get("x") {
+                            Some(v) => v,
+                            None => {
+                                return Err(LabeledError {
+                                    label: "Missing x value".into(),
+                                    msg: format!("Missing x value from record {}", i).into(),
+                                    span: Some(call.head),
+                                });
+                            }
+                        };
                         let x = get_number(x, Some(call.head))?;
-                        let y = record.get("y").unwrap();
+
+                        // Get the y value
+                        let y = match record.get("y") {
+                            Some(v) => v,
+                            None => {
+                                return Err(LabeledError {
+                                    label: "Missing y value".into(),
+                                    msg: format!("Missing y value from record {}", i).into(),
+                                    span: Some(call.head),
+                                });
+                            }
+                        };
                         let y = get_number(y, Some(call.head))?;
 
                         Ok((x, y))

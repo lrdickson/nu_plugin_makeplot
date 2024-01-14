@@ -14,5 +14,5 @@ register ./target/release/nu_plugin_makeplot
 ## Examples
 
 ```
-seq 0 100 | math sin | makeplot | save sine.png
+seq 0 0.1 6.4 | each {|x| {x: $x, y: ($x | math sin)}} | makeplot | save sine.png
 ```
