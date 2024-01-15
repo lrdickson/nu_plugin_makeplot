@@ -1,7 +1,7 @@
 use nu_plugin::{serve_plugin, EvaluatedCall, JsonSerializer, LabeledError, Plugin};
-use nu_protocol::{PluginExample, PluginSignature, Span, Type, Value};
+use nu_protocol::{PluginExample, PluginSignature, Span, SyntaxShape, Type, Value};
 
-use nu_plugin_makeplot::make_plot;
+use nu_plugin_makeplot::{make_plot, PlotOptions};
 
 struct Plot;
 
@@ -29,6 +29,30 @@ fn get_number(v: &Value, span: Option<Span>) -> Result<f32, LabeledError> {
     }
 }
 
+fn parse_call_opts(call: &EvaluatedCall) -> Result<PlotOptions, LabeledError> {
+    let mut options = PlotOptions::new();
+
+    let width: Option<i64> = call.get_flag("width")?;
+    match width {
+        Some(w) => options.width = w as u32,
+        None => (),
+    }
+
+    let height: Option<i64> = call.get_flag("height")?;
+    match height {
+        Some(h) => options.height = h as u32,
+        None => (),
+    }
+
+    let title: Option<String> = call.get_flag("title")?;
+    match title {
+        Some(t) => options.title = t,
+        None => (),
+    }
+
+    Ok(options)
+}
+
 impl Plugin for Plot {
     fn signature(&self) -> Vec<PluginSignature> {
         vec![PluginSignature::build("makeplot")
@@ -38,6 +62,24 @@ impl Plugin for Plot {
                 // (Type::Table(vec![(String::from("x"), Type::Number), (String::from("y"), Type::Number)]), Type::Binary),
                 (Type::Table(vec![]), Type::Binary),
             ])
+            .named(
+                "width",
+                SyntaxShape::Int,
+                "The width of the plot in pixels.",
+                None,
+            )
+            .named(
+                "height",
+                SyntaxShape::Int,
+                "The height of the plot in pixels.",
+                None,
+            )
+            .named(
+                "title",
+                SyntaxShape::String,
+                "The title of the plot.",
+                Some('t'),
+            )
             .plugin_examples(vec![
                 PluginExample{
                     example: "seq 0 0.1 6.4 | each {|x| {x: $x, y: ($x | math sin)}} | makeplot | save sine.png".into(),
@@ -49,7 +91,8 @@ impl Plugin for Plot {
                     description: "Create a plot of the square root of a from a list of values".into(),
                     result: None,
                 },
-            ])]
+            ]),
+        ]
     }
 
     fn run(
@@ -145,7 +188,8 @@ impl Plugin for Plot {
         };
         let values = values?;
 
-        match make_plot(values) {
+        let options = parse_call_opts(call)?;
+        match make_plot(values, &options) {
             Ok(out) => return Ok(Value::binary(out, call.head)),
             Err(e) => Err(LabeledError {
                 msg: format!("{}", e),

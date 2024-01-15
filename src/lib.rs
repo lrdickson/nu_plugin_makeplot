@@ -53,7 +53,23 @@ impl<T, S: Into<String>> ResultToMakePlotError<T, S> for Result<T, image::ImageE
     }
 }
 
-pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
+pub struct PlotOptions {
+    pub width: u32,
+    pub height: u32,
+    pub title: String,
+}
+
+impl PlotOptions {
+    pub fn new() -> Self {
+        Self {
+            width: 640,
+            height: 480,
+            title: String::from(""),
+        }
+    }
+}
+
+pub fn make_plot(values: Vec<(f32, f32)>, options: &PlotOptions) -> Result<Vec<u8>, MakePlotError> {
     // Find the min and max values
     let mut min_x = f32::MAX;
     let mut max_x = f32::MIN;
@@ -85,15 +101,17 @@ pub fn make_plot(values: Vec<(f32, f32)>) -> Result<Vec<u8>, MakePlotError> {
     let plot_max_y = max_y + range_buffer;
 
     // Create the plot
-    let width = 640;
-    let height = 480;
+    let width = options.width as usize;
+    let height = options.height as usize;
     let mut buf = vec![0; width * height * 3];
-    let width = width as u32;
-    let height = height as u32;
+    let width = options.width;
+    let height = options.height;
+
     {
         let root = BitMapBackend::with_buffer(&mut buf, (width, height)).into_drawing_area();
         root.fill(&WHITE).to_makeplot_err("Failed to make plot")?;
         let mut chart = ChartBuilder::on(&root)
+            .caption(options.title.to_owned(), ("sans-serif", 50).into_font())
             .margin(5)
             .x_label_area_size(30)
             .y_label_area_size(30)
