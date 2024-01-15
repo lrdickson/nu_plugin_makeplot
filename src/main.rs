@@ -44,11 +44,7 @@ fn parse_call_opts(call: &EvaluatedCall) -> Result<PlotOptions, LabeledError> {
         None => (),
     }
 
-    let title: Option<String> = call.get_flag("title")?;
-    match title {
-        Some(t) => options.title = t,
-        None => (),
-    }
+    options.title = call.get_flag("title")?;
 
     Ok(options)
 }

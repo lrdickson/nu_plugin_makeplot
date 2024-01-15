@@ -56,7 +56,7 @@ impl<T, S: Into<String>> ResultToMakePlotError<T, S> for Result<T, image::ImageE
 pub struct PlotOptions {
     pub width: u32,
     pub height: u32,
-    pub title: String,
+    pub title: Option<String>,
 }
 
 impl PlotOptions {
@@ -64,7 +64,7 @@ impl PlotOptions {
         Self {
             width: 640,
             height: 480,
-            title: String::from(""),
+            title: None,
         }
     }
 }
@@ -110,15 +110,22 @@ pub fn make_plot(values: Vec<(f32, f32)>, options: &PlotOptions) -> Result<Vec<u
     {
         let root = BitMapBackend::with_buffer(&mut buf, (width, height)).into_drawing_area();
         root.fill(&WHITE).to_makeplot_err("Failed to make plot")?;
-        let mut chart = ChartBuilder::on(&root)
-            .caption(options.title.to_owned(), ("sans-serif", 50).into_font())
-            .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            // .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
-            .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
-            // .build_cartesian_2d(min_x..max_x, min_y..max_y)
-            .to_makeplot_err("Failed to make plot")?;
+        let title = options.title.clone();
+        let mut chart = match title {
+            Some(t) => ChartBuilder::on(&root)
+                .caption(t, ("sans-serif", 50).into_font())
+                .margin(5)
+                .x_label_area_size(30)
+                .y_label_area_size(30)
+                .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
+                .to_makeplot_err("Failed to make plot")?,
+            None => ChartBuilder::on(&root)
+                .margin(5)
+                .x_label_area_size(30)
+                .y_label_area_size(30)
+                .build_cartesian_2d(plot_min_x..plot_max_x, plot_min_y..plot_max_y)
+                .to_makeplot_err("Failed to make plot")?,
+        };
 
         chart
             .configure_mesh()
@@ -127,7 +134,7 @@ pub fn make_plot(values: Vec<(f32, f32)>, options: &PlotOptions) -> Result<Vec<u
 
         chart
             .draw_series(LineSeries::new(values.into_iter(), &RED))
-            .to_makeplot_err("Error")?;
+            .to_makeplot_err("Failed to make plot")?;
 
         root.present().to_makeplot_err("Failed to make plot")?;
     }
